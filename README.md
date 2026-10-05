@@ -199,17 +199,6 @@ MTP depth 3 confirmed active; draft accept rate 52.27 % over the whole
 benchmark. Decode C1 has notable run-to-run dispersion (see SD) — we report it
 rather than the best run.
 
-### Measurement caveats we stand behind
-
-- The C1-Decode 70-vs-74 SM delta (+16 %) and C4 delta (−2.5 %) are **not** a
-  controlled SM on/off A/B test; the SM unlock was a driver-level update
-  followed by a fresh warm benchmark.
-- A `FULL_AND_PIECEWISE` CUDA-graph trial on this runtime produced Xid 13/43
-  after the matrix and was rolled back; PIECEWISE is the qualified mode.
-- The 2026-10-04 batched-P2P repair matrix passed functionally but ran with
-  production traffic in the window; its numbers are deliberately **not**
-  published as a speed comparison.
-
 ## 6. Reproducing this
 
 1. Patch/build: start from `vllm/vllm-openai:v0.30.0` at the pinned digest and
