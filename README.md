@@ -8,7 +8,7 @@ API path in our deployment: Caddy/TLS → LiteLLM → vLLM (loopback-only). The
 serving stack itself is just Docker + vLLM, described below.
 
 > Last benchmark of the current build: **2026-10-03**. On 2026-10-04 a
-> communication-path repair (patch #7 below) was added to the same image; it
+> communication-path repair (patch #6 below) was added to the same image; it
 > fixes a startup hang and carries no performance claim.
 
 ---
@@ -89,30 +89,24 @@ order:
    Removes the pipeline-parallel/PLE refusal and transports raw `input_ids`
    with `IntermediateTensors` between PP stages. Without it the model cannot
    run PP2 across two GPUs.
-2. **Deterministic MoE align overlay** — patch from
-   [vektorprime/qwen38-flash-next-pp2#1](https://github.com/vektorprime/qwen38-flash-next-pp2/pull/1)
-   at `vllm/model_executor/layers/fused_moe/moe_align_block_size.py`.
-   Installed but **disabled at runtime** (`VLLM_MOE_DETERMINISTIC_ALIGN=0`):
-   with it enabled the PP2 run died in C1 with NVIDIA Xid 13/43 (illegal
-   instruction).
-3. **KV cache spec filter — upstream PR
+ 2. **KV cache spec filter — upstream PR
    [vllm-project/vllm#54793](https://github.com/vllm-project/vllm/pull/54793)**
    (patch SHA-256 `9ce4df3eb3f7d32a0a4ef10f2de5cdb4eaf28c15521b58a3de0ecd9db243d8d7`).
    Filters empty worker-projected `UniformTypeKVCacheSpecs` before KV
    allocation; required for an observed `StopIteration` in
    `vllm/v1/worker/utils.py`.
-4. **MTP draft-head fix for Qwen4Exp** — from
+ 3. **MTP draft-head fix for Qwen4Exp** — from
    [vllm-project/vllm#54709](https://github.com/vllm-project/vllm/issues/54709):
    `Qwen4ExpMultiTokenPredictor.forward` checks `intermediate_tensors is None`
    instead of the PP-rank condition. Makes speculative MTP work across PP
    stages (generic MTP-over-PP transport is already in 0.30.0).
-5. **Request-slot state fix — upstream PR
+ 4. **Request-slot state fix — upstream PR
    [vllm-project/vllm#55506](https://github.com/vllm-project/vllm/pull/55506)**
    (open at pin time), pinned on commit
    `5f71d6fac1af38ab89d2d261e6f57d1e88c00090`. Three runtime files rebind the
    Mamba tables/indexing to persistent request slots. This fixed silent
    state-corruption failures we traced through MTP EOS anomalies.
-6. **SpeedSuite** — five upstream speed PRs applied as a verified file overlay
+ 5. **SpeedSuite** — five upstream speed PRs applied as a verified file overlay
    on the statefix image:
 
    | PR | Title | State at pin |
@@ -127,7 +121,7 @@ order:
    because of context-only upstream drift (details and every before/after file
    hash are in our private `speedsuite/manifest.json`). Re-check #58449
    against upstream before reuse — it was still open at pin time.
-7. **Batched P2P communication fix (site-local, 2026-10-04)** — regular
+ 6. **Batched P2P communication fix (site-local, 2026-10-04)** — regular
    cold starts occasionally stalled after weight loading while PyTorch
    lazily created an extra pair communicator for unbatched P2P
    ([ProcessGroupNCCL](https://github.com/pytorch/pytorch/blob/v2.13.0/torch/csrc/distributed/c10d/ProcessGroupNCCL.cpp#L3883-L3926)).
@@ -157,8 +151,8 @@ Effective serving configuration (all bound to loopback only):
 | CUDA graphs | PIECEWISE, capture token sizes `[1,2,4,8,16,32]` |
 | KV cache | BF16 |
 | GPU memory utilization | 0.90 |
-| NCCL | P2P enabled (`NCCL_P2P_DISABLE=0`, `NCCL_P2P_LEVEL=SYS`) + batched-P2P override (#7) |
-| Env | `VLLM_MOE_DETERMINISTIC_ALIGN=0`, `VLLM_COMPUTE_NANS_IN_LOGITS=1` (diagnostic) |
+| NCCL | P2P enabled (`NCCL_P2P_DISABLE=0`, `NCCL_P2P_LEVEL=SYS`) + batched-P2P override (#6) |
+| Env | `VLLM_COMPUTE_NANS_IN_LOGITS=1` (diagnostic) |
 | Parsers | `--reasoning-parser qwen3 --tool-call-parser qwen3_xml`, froggeric template mounted read-only |
 | Multimodal | up to 4 images and 1 video (2 frames) per prompt |
 
@@ -234,13 +228,12 @@ dispersion, so no single-row delta should be attributed to one lever alone.
 ## 6. Reproducing this
 
 1. Patch/build: start from `vllm/vllm-openai:v0.30.0` at the pinned digest and
-   apply the seven layers in section 3 in order, verifying every documented
+   apply the six layers in section 3 in order, verifying every documented
    before/after SHA-256. Every overlay fails closed on hash mismatch.
 2. Download the model snapshot and the pinned chat template; verify file
    counts/sizes/hashes against the pins in section 1.
-3. Serve with the profile in section 4 on a PP2-capable two-GPU host; note the
-   pinned-host-memory requirement for the INT4 PLE table and the
-   `VLLM_MOE_DETERMINISTIC_ALIGN=0` requirement on this hardware.
+ 3. Serve with the profile in section 4 on a PP2-capable two-GPU host; note the
+    pinned-host-memory requirement for the INT4 PLE table.
 4. The driver-side SM unlock and BAR1 P2P patches are optional for
    functionality (the model runs with 70 SMs and `NCCL_P2P_DISABLE=1`) but
    required to match the published throughput. Modifying VBIOS/drivers is at
