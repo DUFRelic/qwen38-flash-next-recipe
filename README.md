@@ -199,21 +199,6 @@ MTP depth 3 confirmed active; draft accept rate 52.27 % over the whole
 benchmark. Decode C1 has notable run-to-run dispersion (see SD) — we report it
 rather than the best run.
 
-### How we got here (historical, not controlled A/B)
-
-| Date (2026) | Change | Decode C1 (tok/s) | Decode C4 total (tok/s) |
-|---|---|---:|---:|
-| 09-30 | PP2 baseline, eager, seq 1, no spec | 15.19 | — |
-| 10-01 | + CUDA graphs, seq 8, MTP3, 8k prefill batch | 112.47 | 154.76 |
-| 10-02 | + NCCL P2P via BAR1 driver patches (3-run A/B: 113.31 → 126.92 / 238.73 → 244.04) | 126.92 | 244.04 |
-| 10-01/03 | + request-slot state fix (#55506) | 109.93–126.22 (two matrices) | 241.06–249.86 |
-| 10-03 | + SpeedSuite overlay (70 SMs, warm) | 115.02 | 251.54 |
-| 10-03 | + SM unlock 70 → 74 (warm) — **current** | 133.39 | 245.17 |
-
-The rows other than the labeled 10-02 P2P A/B are day-to-day comparisons on
-the same load shape, not isolated controlled tests; several cells have high
-dispersion, so no single-row delta should be attributed to one lever alone.
-
 ### Measurement caveats we stand behind
 
 - The C1-Decode 70-vs-74 SM delta (+16 %) and C4 delta (−2.5 %) are **not** a
