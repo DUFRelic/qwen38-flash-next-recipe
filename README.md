@@ -21,7 +21,7 @@ serving stack itself is just Docker + vLLM, described below.
 | Revision | `45d5db34e05a826d0ca150d4526bc29fd2958d63` |
 | Size | 42 files, 101,361,203,754 bytes (≈94.4 GiB) |
 | Quantization | W4A16 (INT4 group size 128, compressed tensors), PLE table packed INT4 + FP16 scales |
-| Base family | Qwen3.8-27B ([`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B)) |
+| Base model | [`halt95/Qwen3.8-Flash-Next-W4A16-Merlin`](https://huggingface.co/halt95/Qwen3.8-Flash-Next-W4A16-Merlin) (family: Qwen3.8-Flash-Next). zankich's checkpoint is a repackage of halt95's W4A16 GPTQ work: the 51B-param FP8 PLE table is repacked to INT4 (group-32 symmetric) and FP8-KV scales are recalibrated; everything else carries over unchanged |
 | Chat template | [`froggeric/Qwen-Fixed-Chat-Templates`](https://huggingface.co/froggeric/Qwen-Fixed-Chat-Templates) v22.5, revision `855bffc49448e299789730ff92c9b8d834d6cc14` |
 | Template file hash | `chat_template.jinja` SHA-256 `e57684bae4156211a55473c5a63be976a405a37ab5be5ae0e5abf1df5349c4b2` |
 
